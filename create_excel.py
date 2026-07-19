@@ -158,17 +158,28 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
         allow_blank=True,
         showDropDown=False,
     )
-    dv_yesno = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True, showDropDown=False)
-    dv_yesno_2 = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True, showDropDown=False)
+    dv_favorite = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True, showDropDown=False)
+    dv_learned = DataValidation(
+        type="list",
+        formula1=f'"{config.LEARNED_UNCHECKED},{config.LEARNED_CHECKED}"',
+        allow_blank=True,
+        showDropDown=False,
+    )
 
-    for dv in (dv_article, dv_level, dv_wordtype, dv_yesno, dv_yesno_2):
+    for dv in (dv_article, dv_level, dv_wordtype, dv_favorite, dv_learned):
         sheet.add_data_validation(dv)
 
     dv_article.add(f"{article_letter}2:{article_letter}{last_row}")
     dv_level.add(f"{level_letter}2:{level_letter}{last_row}")
     dv_wordtype.add(f"{wordtype_letter}2:{wordtype_letter}{last_row}")
-    dv_yesno.add(f"{favorite_letter}2:{favorite_letter}{last_row}")
-    dv_yesno_2.add(f"{learned_letter}2:{learned_letter}{last_row}")
+    dv_favorite.add(f"{favorite_letter}2:{favorite_letter}{last_row}")
+    dv_learned.add(f"{learned_letter}2:{learned_letter}{last_row}")
+
+    for row_idx in range(2, last_row + 1):
+        sheet.cell(row=row_idx, column=learned_col, value=config.LEARNED_UNCHECKED)
+        review_cell = sheet.cell(row=row_idx, column=review_col)
+        review_cell.value = f'=IF(${learned_letter}{row_idx}="{config.LEARNED_CHECKED}",TODAY(),"")'
+        review_cell.number_format = "yyyy-mm-dd"
 
     # --- Conditional formatting ---------------------------------------
     full_row_range = f"A2:{get_column_letter(len(columns))}{last_row}"
@@ -197,12 +208,14 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
         ),
     )
 
-    # 2) Learned rows -> green fill (highest priority, stops other rules)
+    # 2) Learned rows -> green fill when selected as checked
     learned_fill = PatternFill(
         start_color=config.LEARNED_FILL, end_color=config.LEARNED_FILL, fill_type="solid"
     )
     learned_rule = FormulaRule(
-        formula=[f'${learned_letter}2="Yes"'], fill=learned_fill, stopIfTrue=True
+        formula=[f'${learned_letter}2="{config.LEARNED_CHECKED}"'],
+        fill=learned_fill,
+        stopIfTrue=True,
     )
     sheet.conditional_formatting.add(full_row_range, learned_rule)
 
@@ -217,6 +230,7 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
 
     # Review Date column: widen + date format hint
     sheet.column_dimensions[get_column_letter(review_col)].width = 16
+    sheet.column_dimensions[learned_letter].width = 18
 
 
 # ---------------------------------------------------------------------------

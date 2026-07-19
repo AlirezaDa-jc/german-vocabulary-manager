@@ -133,9 +133,12 @@ VOCAB_COLUMNS = [
     "Learned",
     "Review Date",
 ]
+LEARNED_UNCHECKED = "☐ Unchecked"
+LEARNED_CHECKED = "☑ Checked"
 
 # Columns that autofill.py is allowed to populate automatically. "German"
 # is the user-entered seed column and is never overwritten.
+# "Learned" is manually selected as ☐ Unchecked / ☑ Checked in the workbook.
 VOCAB_AUTOFILL_COLUMNS = [c for c in VOCAB_COLUMNS if c != "German"]
 
 # ---------------------------------------------------------------------------

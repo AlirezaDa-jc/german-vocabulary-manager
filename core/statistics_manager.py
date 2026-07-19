@@ -49,7 +49,7 @@ class StatisticsManager:
             "Verbs": f'=COUNTIF({rng(wordtype_letter)},"Verb")',
             "Adjectives": f'=COUNTIF({rng(wordtype_letter)},"Adjective")',
             "Favorites": f'=COUNTIF({rng(favorite_letter)},"Yes")',
-            "Learned": f'=COUNTIF({rng(learned_letter)},"Yes")',
+            "Learned": f'=COUNTIF({rng(learned_letter)},"{config.LEARNED_CHECKED}")',
         }
 
         label_col = 1
