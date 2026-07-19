@@ -4,3 +4,4 @@
 openpyxl>=3.1.2        # Excel workbook creation / editing
 requests>=2.31.0       # HTTP client for all free API sources
 deep-translator>=1.11.4  # optional, keyless EN/FA machine-translation fallback
+pyinstaller>=6.0.0     # Windows .exe packaging

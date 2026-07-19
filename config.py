@@ -14,11 +14,18 @@ every other module has a single source of truth.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Filesystem layout
 # ---------------------------------------------------------------------------
+
+def _application_dir() -> Path:
+    """Return the source folder normally, or the .exe folder when packaged."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
 
 BASE_DIR: Path = Path(__file__).resolve().parent
 DATA_DIR: Path = BASE_DIR / "data"
