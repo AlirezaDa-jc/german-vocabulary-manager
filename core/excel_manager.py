@@ -120,18 +120,19 @@ class ExcelManager:
         german_col = headers["German"]
 
         first_empty_row: Optional[int] = None
+        normalized_word = german_word.strip()
 
         for row_idx in range(2, sheet.max_row + 1):
             cell_value = sheet.cell(row=row_idx, column=german_col).value
 
-            if cell_value and str(cell_value).strip().lower() == german_word.strip().lower():
+            if cell_value and str(cell_value).strip() == normalized_word:
                 return row_idx
 
             if first_empty_row is None and (cell_value is None or str(cell_value).strip() == ""):
                 first_empty_row = row_idx
 
         target_row = first_empty_row or sheet.max_row + 1
-        sheet.cell(row=target_row, column=german_col, value=german_word)
+        sheet.cell(row=target_row, column=german_col, value=normalized_word)
         return target_row
 
     # ------------------------------------------------------------------
@@ -192,6 +193,7 @@ class ExcelManager:
         sheet = self._sheet(sheet_name)
         headers = self._header_map(sheet_name)
         key_col_idx = headers[key_column]
+        normalized_key = key_value.strip()
 
         target_row: Optional[int] = None
         first_empty_row: Optional[int] = None
@@ -199,7 +201,7 @@ class ExcelManager:
         for row_idx in range(2, sheet.max_row + 1):
             cell_value = sheet.cell(row=row_idx, column=key_col_idx).value
 
-            if cell_value and str(cell_value).strip().lower() == key_value.strip().lower():
+            if cell_value and str(cell_value).strip() == normalized_key:
                 target_row = row_idx
                 break
 
@@ -208,7 +210,7 @@ class ExcelManager:
 
         if target_row is None:
             target_row = first_empty_row or sheet.max_row + 1
-            sheet.cell(row=target_row, column=key_col_idx, value=key_value)
+            sheet.cell(row=target_row, column=key_col_idx, value=normalized_key)
 
         for column_name, value in values.items():
             if value in (None, ""):
