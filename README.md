@@ -123,7 +123,7 @@ All sources are free and require no API key:
 ## Installation from source (developers)
 
 ```bash
-git clone <your-repo-url>
+git clone git@github.com:AlirezaDa-jc/german-vocabulary-manager.git
 cd GermanVocabularyManager
 pip install -r requirements.txt
 
