@@ -124,7 +124,7 @@ All sources are free and require no API key:
 
 ```bash
 git clone git@github.com:AlirezaDa-jc/german-vocabulary-manager.git
-cd GermanVocabularyManager
+cd german-vocabulary-manager
 pip install -r requirements.txt
 
 python create_excel.py   # creates vocabulary.xlsx
