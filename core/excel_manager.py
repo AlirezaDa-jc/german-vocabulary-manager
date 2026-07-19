@@ -74,6 +74,67 @@ class ExcelManager:
         return headers
 
     # ------------------------------------------------------------------
+    # Word input sheet
+    # ------------------------------------------------------------------
+
+    def iter_pending_word_rows(self) -> Iterator[Tuple[int, str]]:
+        """Yield ``(row_index, german_word)`` from the Word input sheet.
+
+        A row is pending when it has a German word and its Processed cell
+        is not "Yes".
+        """
+        sheet = self._sheet(config.SHEET_WORD)
+        headers = self._header_map(config.SHEET_WORD)
+        german_col = headers["German"]
+        processed_col = headers["Processed"]
+
+        for row_idx in range(2, sheet.max_row + 1):
+            german_value = sheet.cell(row=row_idx, column=german_col).value
+            if not german_value or not str(german_value).strip():
+                continue
+
+            processed_value = sheet.cell(row=row_idx, column=processed_col).value
+            if processed_value and str(processed_value).strip().lower() == "yes":
+                continue
+
+            yield row_idx, str(german_value).strip()
+
+    def update_word_row(self, row_idx: int, values: Dict[str, object]) -> None:
+        """Write status values into the Word input sheet."""
+        sheet = self._sheet(config.SHEET_WORD)
+        headers = self._header_map(config.SHEET_WORD)
+
+        for column_name, value in values.items():
+            if value in (None, ""):
+                continue
+            col_idx = headers.get(column_name)
+            if col_idx is None:
+                logger.warning("Unknown Word column %r — skipped", column_name)
+                continue
+            sheet.cell(row=row_idx, column=col_idx, value=value)
+
+    def append_vocab_seed_row(self, german_word: str) -> int:
+        """Return an existing Vocabulary row for ``german_word`` or append one."""
+        sheet = self._sheet(config.SHEET_VOCAB)
+        headers = self._header_map(config.SHEET_VOCAB)
+        german_col = headers["German"]
+
+        first_empty_row: Optional[int] = None
+
+        for row_idx in range(2, sheet.max_row + 1):
+            cell_value = sheet.cell(row=row_idx, column=german_col).value
+
+            if cell_value and str(cell_value).strip().lower() == german_word.strip().lower():
+                return row_idx
+
+            if first_empty_row is None and (cell_value is None or str(cell_value).strip() == ""):
+                first_empty_row = row_idx
+
+        target_row = first_empty_row or sheet.max_row + 1
+        sheet.cell(row=target_row, column=german_col, value=german_word)
+        return target_row
+
+    # ------------------------------------------------------------------
     # Vocabulary sheet
     # ------------------------------------------------------------------
 
@@ -122,7 +183,7 @@ class ExcelManager:
     # ------------------------------------------------------------------
 
     def upsert_row(
-        self, sheet_name: str, key_column: str, key_value: str, values: Dict[str, object]
+            self, sheet_name: str, key_column: str, key_value: str, values: Dict[str, object]
     ) -> int:
         """Insert or update a row in ``sheet_name`` keyed by ``key_column``.
 
@@ -133,14 +194,20 @@ class ExcelManager:
         key_col_idx = headers[key_column]
 
         target_row: Optional[int] = None
+        first_empty_row: Optional[int] = None
+
         for row_idx in range(2, sheet.max_row + 1):
             cell_value = sheet.cell(row=row_idx, column=key_col_idx).value
+
             if cell_value and str(cell_value).strip().lower() == key_value.strip().lower():
                 target_row = row_idx
                 break
 
+            if first_empty_row is None and (cell_value is None or str(cell_value).strip() == ""):
+                first_empty_row = row_idx
+
         if target_row is None:
-            target_row = sheet.max_row + 1
+            target_row = first_empty_row or sheet.max_row + 1
             sheet.cell(row=target_row, column=key_col_idx, value=key_value)
 
         for column_name, value in values.items():

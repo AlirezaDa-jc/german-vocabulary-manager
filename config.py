@@ -76,6 +76,7 @@ ENABLE_MACHINE_TRANSLATION_FALLBACK: bool = True
 # Workbook layout — sheet names
 # ---------------------------------------------------------------------------
 
+SHEET_WORD = "Word"
 SHEET_VOCAB = "Vocabulary"
 SHEET_VERBS = "Verbs"
 SHEET_ADJECTIVES = "Adjectives"
@@ -84,6 +85,7 @@ SHEET_STATS = "Statistics"
 SHEET_SETTINGS = "Settings"
 
 ALL_SHEETS = (
+    SHEET_WORD,
     SHEET_VOCAB,
     SHEET_VERBS,
     SHEET_ADJECTIVES,
@@ -91,6 +93,17 @@ ALL_SHEETS = (
     SHEET_STATS,
     SHEET_SETTINGS,
 )
+
+# ---------------------------------------------------------------------------
+# Word input sheet columns
+# ---------------------------------------------------------------------------
+
+WORD_COLUMNS = [
+    "German",
+    "Processed",
+    "Detected Type",
+    "Notes",
+]
 
 # ---------------------------------------------------------------------------
 # Vocabulary sheet columns (ordered — index 0 == column A)

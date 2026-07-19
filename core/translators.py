@@ -84,8 +84,8 @@ class OpenThesaurusClient:
                 value = term.get("term")
                 if value and value.lower() != word.lower():
                     synonyms.append(value)
-        # de-duplicate while preserving order
-        return list(dict.fromkeys(synonyms))
+        # de-duplicate while preserving order, then keep at most 3
+        return list(dict.fromkeys(synonyms))[:3]
 
 
 class MachineTranslator:

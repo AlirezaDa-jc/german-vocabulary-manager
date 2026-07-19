@@ -65,21 +65,37 @@ class VocabularyAutofiller:
 
     def run(self) -> None:
         self.excel.load()
-        pending = list(self.excel.iter_pending_vocab_rows())
+        pending = list(self.excel.iter_pending_word_rows())
+
         if not pending:
             logger.info(
-                "No pending rows found. Type a German word into an empty "
-                "row's 'German' column and run this script again."
+                "No pending rows found. Type a German word into the Word "
+                "sheet's 'German' column and run this script again."
             )
             return
 
         logger.info("Found %d word(s) to autofill.", len(pending))
-        for row_idx, word in pending:
-            logger.info("Processing row %d: %r", row_idx, word)
+        for word_row_idx, word in pending:
+            vocab_row_idx = self.excel.append_vocab_seed_row(word)
+            logger.info("Processing Word row %d -> Vocabulary row %d: %r", word_row_idx, vocab_row_idx, word)
             try:
-                self._process_word(row_idx, word)
-            except Exception:  # noqa: BLE001 - keep going on any single failure
-                logger.exception("Failed to process %r (row %d) — skipped.", word, row_idx)
+                detected_type = self._process_word(vocab_row_idx, word)
+                self.excel.update_word_row(
+                    word_row_idx,
+                    {
+                        "Processed": "Yes",
+                        "Detected Type": detected_type,
+                    },
+                )
+            except Exception:
+                logger.exception("Failed to process %r (Word row %d) — skipped.", word, word_row_idx)
+                self.excel.update_word_row(
+                    word_row_idx,
+                    {
+                        "Processed": "No",
+                        "Notes": "Autofill failed. Check data/autofill.log for details.",
+                    },
+                )
 
         StatisticsManager().touch_last_updated(self.excel.workbook)
         self.excel.save()
@@ -89,7 +105,7 @@ class VocabularyAutofiller:
     # Per-word processing
     # ------------------------------------------------------------------
 
-    def _process_word(self, row_idx: int, word: str) -> None:
+    def _process_word(self, row_idx: int, word: str) -> str:
         entry = self.dictionary.lookup(word)
 
         if not entry.found:
@@ -103,10 +119,10 @@ class VocabularyAutofiller:
                     )
                 },
             )
-            return
+            return "Not found"
 
         word_type = POS_MAP.get(entry.pos or "", "Other")
-
+        print(f"Detected type: {word_type}")
         if word_type == "Noun":
             self._fill_noun(row_idx, entry)
         elif word_type == "Verb":
@@ -115,6 +131,8 @@ class VocabularyAutofiller:
             self._fill_adjective(row_idx, entry)
         else:
             self._fill_generic(row_idx, entry, word_type)
+
+        return word_type
 
     # ------------------------------------------------------------------
     # Noun
@@ -127,6 +145,7 @@ class VocabularyAutofiller:
         pronunciation_url = self._download_audio(entry, info.word)
         english = info.english or self._machine_translate(info.word, "en")
         persian = self._persian_translation(entry, english or info.word)
+        synonyms = info.synonyms[:3] if info.synonyms else []
 
         values = {
             "Article": info.article,
@@ -138,7 +157,7 @@ class VocabularyAutofiller:
             "Pronunciation URL": pronunciation_url,
             "Example Sentence": info.example,
             "Example Translation": self._translate_example(info.example),
-            "Synonyms": ", ".join(info.synonyms) if info.synonyms else None,
+            "Synonyms": ", ".join(synonyms) if synonyms else None,
             "Antonyms": ", ".join(info.antonyms) if info.antonyms else None,
             "Gender": info.gender,
             "Genitive": info.genitive,
@@ -159,6 +178,7 @@ class VocabularyAutofiller:
         english = info.meaning or self._machine_translate(info.infinitive, "en")
         persian = self._persian_translation(entry, english or info.infinitive)
         example = info.example or self._fallback_example(info.infinitive)
+        synonyms = (entry.synonyms or self.thesaurus.find_synonyms(entry.word))[:3]
 
         vocab_values = {
             "Word Type": "Verb",
@@ -168,6 +188,8 @@ class VocabularyAutofiller:
             "Pronunciation URL": pronunciation_url,
             "Example Sentence": example,
             "Example Translation": self._translate_example(example),
+            "Synonyms": ", ".join(synonyms) if synonyms else None,
+            "Antonyms": ", ".join(entry.antonyms) if entry.antonyms else None,
             "Notes": "; ".join(info.notes) if info.notes else None,
         }
         self.excel.update_vocab_row(row_idx, vocab_values)
@@ -204,6 +226,7 @@ class VocabularyAutofiller:
         english = info.meaning or self._machine_translate(info.positive, "en")
         persian = self._persian_translation(entry, english or info.positive)
         example = info.example or self._fallback_example(info.positive)
+        synonyms = (entry.synonyms or self.thesaurus.find_synonyms(entry.word))[:3]
 
         vocab_values = {
             "Word Type": "Adjective",
@@ -213,6 +236,8 @@ class VocabularyAutofiller:
             "Pronunciation URL": pronunciation_url,
             "Example Sentence": example,
             "Example Translation": self._translate_example(example),
+            "Synonyms": ", ".join(synonyms) if synonyms else None,
+            "Antonyms": ", ".join(entry.antonyms) if entry.antonyms else None,
             "Notes": "; ".join(info.notes) if info.notes else None,
         }
         self.excel.update_vocab_row(row_idx, vocab_values)
@@ -239,7 +264,7 @@ class VocabularyAutofiller:
         )
         persian = self._persian_translation(entry, english or entry.word)
         example = entry.examples[0] if entry.examples else self._fallback_example(entry.word)
-        synonyms = entry.synonyms or self.thesaurus.find_synonyms(entry.word)
+        synonyms = (entry.synonyms or self.thesaurus.find_synonyms(entry.word))[:3]
 
         values = {
             "Word Type": word_type,
@@ -265,7 +290,9 @@ class VocabularyAutofiller:
             if fallback:
                 info.example = fallback[0]
         if hasattr(info, "synonyms") and not info.synonyms:
-            info.synonyms = self.thesaurus.find_synonyms(getattr(info, "word", entry.word))
+            info.synonyms = self.thesaurus.find_synonyms(getattr(info, "word", entry.word))[:3]
+        elif hasattr(info, "synonyms"):
+            info.synonyms = info.synonyms[:3]
 
     def _download_audio(self, entry: RawEntry, word: str):
         if not entry.audio_filename:

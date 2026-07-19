@@ -89,6 +89,33 @@ def _apply_body_style(sheet: Worksheet, columns: List[str], n_data_rows: int) ->
 
 
 # ---------------------------------------------------------------------------
+# Word input sheet
+# ---------------------------------------------------------------------------
+
+
+def build_word_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
+    sheet = workbook.create_sheet(config.SHEET_WORD)
+    columns = config.WORD_COLUMNS
+    _write_header(sheet, columns)
+    _autosize_columns(sheet, columns)
+    _apply_body_style(sheet, columns, n_data_rows)
+    _add_table(sheet, "WordTable", columns, n_data_rows)
+
+    last_row = n_data_rows + 1
+    processed_col = columns.index("Processed") + 1
+    processed_letter = get_column_letter(processed_col)
+
+    dv_processed = DataValidation(
+        type="list",
+        formula1='"Yes,No"',
+        allow_blank=True,
+        showDropDown=False,
+    )
+    sheet.add_data_validation(dv_processed)
+    dv_processed.add(f"{processed_letter}2:{processed_letter}{last_row}")
+
+
+# ---------------------------------------------------------------------------
 # Vocabulary sheet
 # ---------------------------------------------------------------------------
 
@@ -355,6 +382,7 @@ def main() -> None:
     workbook = Workbook()
     workbook.remove(workbook.active)  # drop the default "Sheet"
 
+    build_word_sheet(workbook)
     build_vocabulary_sheet(workbook)
     build_verbs_sheet(workbook)
     build_adjectives_sheet(workbook)

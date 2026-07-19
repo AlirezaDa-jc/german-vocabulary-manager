@@ -310,7 +310,10 @@ class GermanDictionary:
                         piece = piece.strip()
                         if piece:
                             words.append(piece)
-            setattr(entry, target, words)
+            unique_words = list(dict.fromkeys(words))
+            if target == "synonyms":
+                unique_words = unique_words[:3]
+            setattr(entry, target, unique_words)
 
     def _parse_translations(self, entry: RawEntry, section: str) -> None:
         body = _extract_section(section, level=4, heading_pattern="Übersetzungen")
