@@ -1,2 +1,7 @@
 .idea
 vocabulary.xlsx
+dist/
+build/
+*.spec.bak
+__pycache__/
+data/*.log

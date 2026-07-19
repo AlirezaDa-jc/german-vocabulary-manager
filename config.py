@@ -209,7 +209,7 @@ STATS_ROWS = [
 
 SETTINGS_ROWS = [
     ("App Name", "German Vocabulary Manager"),
-    ("Version", "1.0.0"),
+    ("Version", "1.1.0"),
     ("Data Sources", "Wiktionary (de), Wikimedia Commons, Tatoeba, OpenThesaurus"),
     ("Autofill Script", "autofill.py"),
     ("Audio Folder", "audio/"),

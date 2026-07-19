@@ -1,174 +1,225 @@
 # German Vocabulary Manager
 
-An offline-first, Excel-based German vocabulary tool. You type a single
-German word into a spreadsheet cell; a script fills in everything else —
-article, plural, IPA, English/Persian translation, example sentence,
-full verb conjugation, adjective comparison, synonyms/antonyms, and
-pronunciation audio — using **only free, keyless public sources**. No
-ChatGPT/OpenAI API, no paid service, no API key required anywhere.
+A Windows desktop app + Excel workbook for building a German vocabulary
+database. You type German words into the workbook, click one button,
+and the app enriches them with grammar, translations, examples, and
+pronunciation audio pulled from free online sources.
 
-## 1. Requirements
+## Project overview
 
-- Python 3.11+
-- `pip install -r requirements.txt`
-- An internet connection when running `autofill.py` (not needed for
-  `create_excel.py`, which only builds the empty workbook)
+German Vocabulary Manager is an Excel-based vocabulary system with a
+small Windows GUI (`app.py`, packaged as `GermanVocabularyManager.exe`)
+on top of it. The workbook itself is stored and edited locally, but the
+**autofill** feature needs an internet connection to look up each word.
 
-## 2. Project structure
+## Features
+
+- One workbook (`vocabulary.xlsx`) holding your vocabulary, grammar
+  reference, verb conjugations, adjective comparisons, statistics, and
+  settings.
+- Autofill: type a German word, get article, plural, declension, verb
+  conjugation, adjective comparison, English/Persian translation,
+  IPA, example sentence, synonyms/antonyms, and pronunciation audio —
+  automatically.
+- A simple GUI with four buttons: create/reset the workbook, run
+  autofill, open the workbook, open the project folder.
+- No paid services and no API key — only free, public data sources.
+
+## What is online vs. local
+
+This app is **not** a fully offline tool. Be precise about this:
+
+| Action | Requires internet? |
+|---|---|
+| Creating / resetting the workbook | No |
+| Opening and editing the workbook by hand | No |
+| Autofill (looking up words) | **Yes** |
+
+Workbook storage is local-first — your data lives in a plain `.xlsx`
+file on your computer. Enrichment is online-first — autofill calls
+public web APIs (Wiktionary, Wikimedia Commons, Tatoeba,
+OpenThesaurus, and a translation fallback) to fetch data it doesn't
+already have.
+
+## Windows quick start (end users)
+
+1. Extract `GermanVocabularyManager.zip`.
+2. Run `GermanVocabularyManager.exe`.
+3. Click **Create / Reset Workbook** if `vocabulary.xlsx` doesn't exist yet.
+4. Click **Open Workbook**.
+5. Go to the **Word** sheet and type in the German words you want to learn.
+6. Save and close Excel.
+7. Return to the app and click **Autofill Vocabulary**.
+8. Wait for the log to show it's finished.
+9. Click **Open Workbook** again to review the results on the
+   **Vocabulary**, **Verbs**, and **Adjectives** sheets.
+
+## Using the GUI buttons
+
+**Create / Reset Workbook**
+Runs `create_excel.py` to create `vocabulary.xlsx`, or rebuild it from
+scratch if it already exists (this resets the workbook — back up first
+if you want to keep existing data).
+
+**Autofill Vocabulary**
+Runs `autofill.py`. Looks up every pending word from the **Word**
+sheet, fills in the **Vocabulary** sheet (and **Verbs**/**Adjectives**
+when relevant), downloads pronunciation audio, updates statistics, and
+writes progress to the log.
+
+**Open Workbook**
+Opens `vocabulary.xlsx` in Excel.
+
+**Open Project Folder**
+Opens the folder containing the workbook, `data/`, `audio/`,
+`images/`, and the executable.
+
+### Important: close Excel before running Create/Reset or Autofill
+
+Excel locks the workbook file while it's open. The app checks for that
+lock to avoid write errors or corrupting the file — if `vocabulary.xlsx`
+is open in Excel, close it first, then click the button.
+
+## Excel workbook workflow
+
+1. Type words into the **Word** sheet — this is the only sheet you type
+   new words into.
+2. Save and close the workbook.
+3. Run autofill from the app.
+4. The app reads pending words from **Word**, marks them processed, and
+   writes the enriched data into **Vocabulary** (plus **Verbs** /
+   **Adjectives** for those word types).
+5. Fields you maintain by hand — **Tags**, **Favorite**, **Learned**,
+   **Review Date** — are never touched by autofill.
+
+## Workbook sheets
+
+| Sheet | Purpose |
+|---|---|
+| **Word** | Your input sheet — type new German words here. |
+| **Vocabulary** | Main database: German, Article, Plural, Word Type, English, Persian, IPA, Pronunciation URL, Example Sentence, Example Translation, Synonyms, Antonyms, Gender, Genitive, Dative, Accusative, Notes, Tags, Favorite, Learned, Review Date. |
+| **Verbs** | Infinitive, ich, du, er/sie/es, wir, ihr, sie/Sie, Präteritum, Perfekt, Partizip II, Hilfsverb, Trennbar, Reflexiv, Irregular, Meaning, Example. |
+| **Adjectives** | Positive, Comparative, Superlative, Meaning, Example. |
+| **Grammar** | Static German grammar reference with rules and examples. |
+| **Statistics** | Formula-driven counts: total words, nouns, verbs, adjectives, favorites, learned, progress %. |
+| **Settings** | App metadata and last-updated timestamp. |
+
+## Data sources
+
+All sources are free and require no API key:
+
+- **German Wiktionary** — primary source: word type, article, plural,
+  declension, conjugation data, adjective comparison, IPA, examples,
+  translations, synonyms, antonyms.
+- **Wikimedia Commons** — resolves and downloads pronunciation audio
+  referenced by Wiktionary.
+- **Tatoeba** — fallback example sentences.
+- **OpenThesaurus** — fallback German synonyms.
+- **deep-translator / GoogleTranslator** — last-resort machine
+  translation for English/Persian and example-sentence translation,
+  used only when the sources above don't provide enough. This is a
+  best-effort, unofficial fallback — review its output.
+
+## Installation from source (developers)
+
+```bash
+git clone <your-repo-url>
+cd GermanVocabularyManager
+pip install -r requirements.txt
+
+python create_excel.py   # creates vocabulary.xlsx
+python autofill.py       # fills pending words from the Word sheet
+python app.py            # runs the GUI directly with Python
+```
+
+## Building the Windows executable
+
+```bash
+python -m PyInstaller GermanVocabularyAutofill.spec --clean --noconfirm
+```
+
+Output:
+
+```
+dist/GermanVocabularyManager/GermanVocabularyManager.exe
+dist/GermanVocabularyManager.zip
+```
+
+Distribute the whole folder or the zip — not the `.exe` alone.
+`vocabulary.xlsx`, `data/`, `audio/`, and `images/` are expected to sit
+next to the executable (they're created there automatically if
+missing).
+
+## Project structure
 
 ```
 GermanVocabularyManager/
-├── vocabulary.xlsx        # the workbook (generated by create_excel.py)
-├── create_excel.py         # builds the workbook from scratch
-├── autofill.py              # fills empty rows from free data sources
-├── config.py                # paths, endpoints, column layout, styling
+├── app.py                          # Windows GUI entry point
+├── autofill.py                      # autofill orchestration
+├── create_excel.py                   # workbook generator
+├── config.py                          # paths, endpoints, styling, PyInstaller-aware paths
+├── GermanVocabularyAutofill.spec       # PyInstaller build spec
 ├── requirements.txt
 ├── README.md
-├── data/                     # cache + log file (created automatically)
-├── audio/                    # downloaded pronunciation clips
-├── images/                   # reserved for future image support
-└── core/
-    ├── models.py             # RawEntry / NounInfo / VerbInfo / AdjectiveInfo
-    ├── http_client.py         # retrying HTTP session shared by every source
-    ├── dictionary.py          # GermanDictionary — fetches + parses Wiktionary
-    ├── parsers.py              # NounParser / VerbParser / AdjectiveParser
-    ├── translators.py          # Tatoeba / OpenThesaurus / MachineTranslator
-    ├── audio_downloader.py     # resolves + downloads Commons pronunciation audio
-    ├── excel_manager.py        # ExcelManager — all workbook reads/writes
-    └── statistics_manager.py   # StatisticsManager — Statistics sheet formulas
+├── vocabulary.xlsx
+├── core/
+│   ├── audio_downloader.py            # Commons audio download
+│   ├── dictionary.py                   # Wiktionary fetch + parse
+│   ├── excel_manager.py                 # workbook read/write
+│   ├── http_client.py                    # retrying HTTP session
+│   ├── models.py                          # data classes
+│   ├── parsers.py                          # noun/verb/adjective parsing
+│   ├── statistics_manager.py                # Statistics sheet
+│   └── translators.py                        # Tatoeba/OpenThesaurus/MT fallback
+├── data/                                # cache + logs
+├── audio/                                # downloaded pronunciation files
+├── images/                                # reserved for future use
+├── dist/                                   # PyInstaller output (generated, not committed)
 ```
 
-## 3. Quick start
+## Logs and generated files
 
-```bash
-pip install -r requirements.txt
+Autofill logs are written to `data/`. Check them first if a run seems
+to have failed or skipped words.
 
-# 1) Create the empty workbook (only needed once, or to reset it)
-python create_excel.py
+## Known limitations
 
-# 2) Open vocabulary.xlsx, go to the Vocabulary sheet, and type a German
-#    word into an empty row's "German" column, e.g.:
-#       Haus
-#       gehen
-#       schön
-#    Leave every other cell in that row blank. Save and close the file.
+- Autofill needs internet access; availability, rate limits, or source
+  structure changes can affect results.
+- Wiktionary entries vary in completeness — some words will come back
+  with blank fields.
+- Machine translation fallback is best-effort — review it.
+- Verb conjugation and adjective comparison may need manual
+  verification, especially for irregular words.
+- Pronunciation audio depends on Wiktionary/Commons having a usable
+  file for that word.
+- Excel must be closed before Create/Reset or Autofill runs.
 
-# 3) Run the autofill script
-python autofill.py
-```
+## Troubleshooting
 
-Re-open `vocabulary.xlsx` — the row (and, for verbs/adjectives, a new
-row on the Verbs/Adjectives sheet) is now filled in. Run `autofill.py`
-again any time; already-completed rows (rows whose "English" cell is
-non-empty) are skipped automatically, so only newly typed words are
-looked up.
+**"Workbook is open" error** — Close Excel completely, then retry.
 
-## 4. Data sources (all free, no key required)
+**No words get processed** — Add words to the **Word** sheet and save
+the workbook before running Autofill.
 
-| Source | Used for |
-|---|---|
-| **German Wiktionary** (`de.wiktionary.org`, MediaWiki API) | Article/gender, plural, declension (genitive/dative/accusative), verb conjugation overview, adjective comparison, IPA, audio filename, example sentences, synonyms/antonyms, English (and, where present, Persian) translations |
-| **Wikimedia Commons** | Resolves the Wiktionary-referenced audio filename to a real download URL |
-| **Tatoeba** (`tatoeba.org/eng/api_v0/search`) | Fallback example sentence + English translation when Wiktionary has none |
-| **OpenThesaurus** (`openthesaurus.de`) | Fallback German synonyms when Wiktionary's "Synonyme" section is empty |
-| **`deep-translator`'s `GoogleTranslator`** (unofficial, keyless) | Last-resort English/Persian translation, and English translation of example sentences, when nothing above supplied one |
+**Missing translations/examples** — The online source didn't have
+enough data for that word, or the network request failed; try again
+later.
 
-**Important note on the machine-translation fallback:** it talks to an
-unofficial, keyless public endpoint with no SLA. It is intentionally
-the *last* fallback in the pipeline (Wiktionary's own translation table
-is always tried first). Treat its output as best-effort, not
-authoritative — spot-check anything that matters.
+**The .exe won't open / Windows blocks it** — The app isn't
+code-signed. Extract the zip fully first (don't run from inside the
+zip), then allow it through Windows security if you trust the source.
 
-**Important note on testing:** this project's code was written and
-statically reviewed, and `create_excel.py` was actually run to confirm
-the workbook it produces opens correctly with valid formulas. The
-network calls in `autofill.py` (Wiktionary, Commons, Tatoeba,
-OpenThesaurus, machine translation) could **not** be exercised end to
-end from the sandbox this project was built in, because that sandbox's
-network allowlist does not include those domains. The wikitext parsing
-logic in `core/dictionary.py` was unit-tested against a realistic
-sample Wiktionary page (see `core/dictionary.py`'s parsing functions),
-but you should run `python autofill.py` on a few words yourself the
-first time and check the results before relying on it for many words.
+**Missing audio** — Not every word has a pronunciation clip available
+on Wikimedia Commons.
 
-## 5. Workbook layout
+**Build fails** — Make sure dependencies from `requirements.txt` are
+installed in the Python environment you're building from, then rerun
+the PyInstaller command.
 
-### Vocabulary sheet
-`German, Article, Plural, Word Type, English, Persian, IPA,
-Pronunciation URL, Example Sentence, Example Translation, Synonyms,
-Antonyms, Level (A1-C2), Gender, Genitive, Dative, Accusative, Notes,
-Tags, Favorite, Learned, Review Date`
+## License
 
-- **Article** text is colored automatically: `der` = blue, `die` = red,
-  `das` = green (conditional formatting, live in Excel).
-- A row turns **green** when `Learned` = `Yes`, and **yellow** when
-  `Favorite` = `Yes` (Learned takes priority if both are set).
-- `Word Type`, `Level`, `Favorite`, `Learned` are dropdowns (data
-  validation).
-- `Tags`, `Level`, `Favorite`, `Learned`, `Review Date` are always
-  left for you to fill in by hand — `autofill.py` never touches them.
-
-### Verbs sheet
-`Infinitive, ich, du, er/sie/es, wir, ihr, sie/Sie, Präteritum,
-Perfekt, Partizip II, Hilfsverb, Trennbar, Reflexiv, Irregular,
-Meaning, Example`
-
-Populated automatically whenever a word typed into the Vocabulary
-sheet turns out to be a verb. Conjugation forms not explicitly listed
-in Wiktionary's overview template are derived with regular verb rules
-and flagged in the Vocabulary row's `Notes` cell — always double-check
-irregular verbs.
-
-### Adjectives sheet
-`Positive, Comparative, Superlative, Meaning, Example` — same
-auto-population logic as Verbs, triggered by adjectives.
-
-### Grammar sheet
-A static, hand-written quick-reference of core German grammar rules
-(gender/articles, plurals, cases, present tense, separable verbs,
-Perfekt, adjective comparison, subordinate-clause word order).
-
-### Statistics sheet
-Live formulas (`COUNTA`/`COUNTIF`) — Total Words, Nouns, Verbs,
-Adjectives, Favorites, Learned, Progress % — recalculated by Excel
-automatically as you edit the Vocabulary sheet.
-
-### Settings sheet
-App metadata and a "Last Updated" timestamp that `autofill.py` refreshes
-after every run.
-
-## 6. Design notes
-
-- **Modular by class**, per the project spec: `GermanDictionary` (raw
-  Wiktionary fetch+parse), `NounParser` / `VerbParser` /
-  `AdjectiveParser` (turn raw data into structured info),
-  `ExcelManager` (all spreadsheet I/O), `StatisticsManager` (Statistics
-  sheet formulas), plus supporting classes `HttpClient`,
-  `AudioDownloader`, `TatoebaClient`, `OpenThesaurusClient`,
-  `MachineTranslator`.
-- **Type hints** throughout; **docstrings** on every public class/method.
-- **Logging** to both console and `data/autofill.log`.
-- **Retries with exponential backoff** for every network call
-  (`core/http_client.py`); a failing source is skipped gracefully
-  rather than crashing the whole run.
-- **Idempotent**: rows already filled in are skipped; running
-  `autofill.py` repeatedly is safe and cheap.
-- **Never overwrites your manual edits**: `ExcelManager` only ever
-  writes into cells that are currently empty.
-
-## 7. Known limitations
-
-- Wiktionary coverage varies — rare or very new words, or entries with
-  non-standard template usage, may come back with several blank
-  columns. The `Notes` column will say so.
-- Verb conjugation for `wir` / `ihr` / `sie(Sie)` is always derived
-  with regular rules (Wiktionary's German verb overview template
-  generally does not list every person) — correct for the vast
-  majority of verbs, but review it for irregular ones.
-- Persian translations depend on Wiktionary having an explicit `{{fa}}`
-  translation line (uncommon) or on the machine-translation fallback
-  (best-effort, unofficial).
-- Audio is saved in its original format (usually `.ogg`, as hosted on
-  Commons) rather than force-converted to `.mp3`, so nothing is
-  mislabeled; the exact saved path is written into the "Pronunciation
-  URL" cell.
+See [LICENSE](LICENSE) for the license covering this project's code.
+Data pulled by autofill comes from third parties with their own
+licenses (e.g. Wiktionary content is CC BY-SA, Tatoeba sentences are
+CC BY 2.0 FR) — that data is not covered by this project's license.
