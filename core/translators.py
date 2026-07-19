@@ -31,6 +31,11 @@ class TatoebaClient:
 
     def find_example(self, word: str) -> Optional[Tuple[str, str]]:
         """Return ``(german_sentence, english_translation)`` or ``None``."""
+        examples = self.find_examples(word, limit=1)
+        return examples[0] if examples else None
+
+    def find_examples(self, word: str, limit: int = 4) -> List[Tuple[str, str]]:
+        """Return up to ``limit`` German example sentences with English translations."""
         params = {
             "from": "deu",
             "to": "eng",
@@ -40,29 +45,35 @@ class TatoebaClient:
         }
         response = client.get(config.TATOEBA_API, params=params)
         if response is None:
-            return None
+            return []
         try:
             data = response.json()
             results = data.get("results", [])
         except ValueError:
             logger.warning("Tatoeba returned non-JSON response for %r", word)
-            return None
+            return []
+
+        examples: List[Tuple[str, str]] = []
         for result in results:
             german_text = result.get("text")
             if not german_text:
                 continue
+
             translations = result.get("translations", [])
-            english_text = None
+            english_text = ""
             for group in translations:
                 for translation in group:
                     if translation.get("lang") == "eng":
-                        english_text = translation.get("text")
+                        english_text = translation.get("text") or ""
                         break
                 if english_text:
                     break
-            if german_text:
-                return german_text, (english_text or "")
-        return None
+
+            examples.append((german_text, english_text))
+            if len(examples) >= limit:
+                break
+
+        return examples
 
 
 class OpenThesaurusClient:

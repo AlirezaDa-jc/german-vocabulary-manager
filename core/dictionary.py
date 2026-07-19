@@ -296,10 +296,18 @@ class GermanDictionary:
                     entry.examples.append(cleaned)
 
     def _parse_synonyms_antonyms(self, entry: RawEntry, section: str) -> None:
-        for heading, target in (("Synonyme", "synonyms"), ("Gegenwörter", "antonyms")):
-            body = _extract_section(section, level=4, heading_pattern=heading)
+        for headings, target in (
+                (("Synonyme", "Sinnverwandte Wörter", "Sinnverwandte Woerter"), "synonyms"),
+                (("Gegenwörter", "Gegenwoerter", "Antonyme"), "antonyms"),
+        ):
+            body = None
+            for heading in headings:
+                body = _extract_section(section, level=4, heading_pattern=heading)
+                if body:
+                    break
             if not body:
                 continue
+
             words: List[str] = []
             for line in body.splitlines():
                 line = line.strip()
@@ -310,9 +318,12 @@ class GermanDictionary:
                         piece = piece.strip()
                         if piece:
                             words.append(piece)
+
             unique_words = list(dict.fromkeys(words))
             if target == "synonyms":
                 unique_words = unique_words[:3]
+            else:
+                unique_words = unique_words[:5]
             setattr(entry, target, unique_words)
 
     def _parse_translations(self, entry: RawEntry, section: str) -> None:

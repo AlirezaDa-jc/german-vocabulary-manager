@@ -13,7 +13,8 @@ confirmed* in the ``notes`` field so the user knows to double-check it.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional
+import re
+from typing import Dict, Optional, List
 
 import config
 from core.dictionary import strip_wikitext
@@ -64,13 +65,19 @@ class NounParser:
 
         info.ipa = entry.ipa
         info.audio_filename = entry.audio_filename
-        if entry.examples:
-            info.example = entry.examples[0]
+        info.example = self._preferred_example(entry.examples)
         if entry.english_translations:
             info.english = ", ".join(dict.fromkeys(entry.english_translations))
-        info.synonyms = entry.synonyms
-        info.antonyms = entry.antonyms
+        info.synonyms = entry.synonyms if entry.synonyms else extract_section_words(entry.wikitext, "Synonyme")
+        info.antonyms = entry.antonyms if entry.antonyms else extract_section_words(entry.wikitext, "Gegenwörter")
         return info
+
+    @staticmethod
+    def _preferred_example(examples) -> Optional[str]:
+        if not examples:
+            return None
+        preferred_index = min(3, len(examples) - 1)
+        return examples[preferred_index]
 
     @staticmethod
     def _first_present(params: Dict[str, str], keys) -> Optional[str]:
@@ -159,11 +166,17 @@ class VerbParser:
 
         info.ipa = entry.ipa
         info.audio_filename = entry.audio_filename
-        if entry.examples:
-            info.example = entry.examples[0]
+        info.example = self._preferred_example(entry.examples)
         if entry.english_translations:
             info.meaning = ", ".join(dict.fromkeys(entry.english_translations))
         return info
+
+    @staticmethod
+    def _preferred_example(examples) -> Optional[str]:
+        if not examples:
+            return None
+        preferred_index = min(3, len(examples) - 1)
+        return examples[preferred_index]
 
     @staticmethod
     def _clean(value: Optional[str]) -> Optional[str]:
@@ -229,11 +242,17 @@ class AdjectiveParser:
 
         info.ipa = entry.ipa
         info.audio_filename = entry.audio_filename
-        if entry.examples:
-            info.example = entry.examples[0]
+        info.example = self._preferred_example(entry.examples)
         if entry.english_translations:
             info.meaning = ", ".join(dict.fromkeys(entry.english_translations))
         return info
+
+    @staticmethod
+    def _preferred_example(examples) -> Optional[str]:
+        if not examples:
+            return None
+        preferred_index = min(3, len(examples) - 1)
+        return examples[preferred_index]
 
     @staticmethod
     def _regular_comparative(word: str) -> str:
@@ -242,3 +261,29 @@ class AdjectiveParser:
     @staticmethod
     def _regular_superlative(word: str) -> str:
         return f"am {word}sten"
+
+
+def extract_section_words(wikitext: str, section_name: str) -> List[str]:
+    """
+    Extracts words inside [[ ]] brackets from a specific Wiktionary section.
+    Works for sections like 'Gegenwörter', 'Synonyme', 'Unterbegriffe', etc.
+    """
+    if not wikitext:
+        return []
+
+    # 1. Locate the section header (e.g., {{Gegenwörter}}) up until the next section
+    pattern = rf"{{{{{section_name}}}}}\n(.*?)(?=\n\n|\n{{{{\w+}}}}|\Z)"
+    match = re.search(pattern, wikitext, re.DOTALL)
+
+    if not match:
+        return []
+
+    section_content = match.group(1)
+
+    # 2. Extract words inside wiki-links like [[unglücklich]] or [[traurig]]
+    # This also handles piped links like [[wort|anzeigetext]] by keeping the first part
+    words = re.findall(r"\[\[([^|\]]+)(?:\|[^\]]*)?\]\]", section_content)
+
+    # 3. Clean up whitespace and drop duplicates while preserving order
+    cleaned_words = [w.strip() for w in words if w.strip()]
+    return list(dict.fromkeys(cleaned_words))

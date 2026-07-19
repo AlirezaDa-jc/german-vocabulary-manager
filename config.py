@@ -122,7 +122,6 @@ VOCAB_COLUMNS = [
     "Example Translation",
     "Synonyms",
     "Antonyms",
-    "Level (A1-C2)",
     "Gender",
     "Genitive",
     "Dative",
@@ -227,7 +226,6 @@ LEARNED_FILL = "C6EFCE"   # light green row fill
 FAVORITE_FILL = "FFF2CC"  # light yellow row fill
 
 VALID_ARTICLES = {"der", "die", "das"}
-VALID_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"]
 VALID_WORD_TYPES = [
     "Noun",
     "Verb",
@@ -240,6 +238,17 @@ VALID_WORD_TYPES = [
     "Interjection",
     "Other",
 ]
+
+GERMAN_PRONOUN_CASES = {
+    "ich": {"Dative": "mir", "Accusative": "mich"},
+    "du": {"Dative": "dir", "Accusative": "dich"},
+    "er": {"Dative": "ihm", "Accusative": "ihn"},
+    "sie": {"Dative": "ihr", "Accusative": "sie"},
+    "es": {"Dative": "ihm", "Accusative": "es"},
+    "wir": {"Dative": "uns", "Accusative": "uns"},
+    "ihr": {"Dative": "euch", "Accusative": "euch"},
+    "Sie": {"Dative": "Ihnen", "Accusative": "Sie"},
+}
 
 # Common German separable verb prefixes, used as a heuristic for the
 # "Trennbar" (separable) column when Wiktionary does not state it

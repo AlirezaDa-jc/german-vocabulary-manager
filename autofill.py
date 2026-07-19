@@ -30,7 +30,7 @@ from core.audio_downloader import AudioDownloader
 from core.dictionary import POS_MAP, GermanDictionary
 from core.excel_manager import ExcelManager
 from core.models import RawEntry
-from core.parsers import AdjectiveParser, NounParser, VerbParser
+from core.parsers import AdjectiveParser, NounParser, VerbParser, extract_section_words
 from core.statistics_manager import StatisticsManager
 from core.translators import MachineTranslator, OpenThesaurusClient, TatoebaClient
 
@@ -226,7 +226,9 @@ class VocabularyAutofiller:
         english = info.meaning or self._machine_translate(info.positive, "en")
         persian = self._persian_translation(entry, english or info.positive)
         example = info.example or self._fallback_example(info.positive)
-        synonyms = (entry.synonyms or self.thesaurus.find_synonyms(entry.word))[:3]
+        synonyms = entry.synonyms if entry.synonyms else extract_section_words(entry.wikitext, "Synonyme")
+        antonyms = entry.antonyms if entry.antonyms else extract_section_words(entry.wikitext, "Gegenwörter")
+        synonyms = (synonyms or self.thesaurus.find_synonyms(entry.word))[:3]
 
         vocab_values = {
             "Word Type": "Adjective",
@@ -237,7 +239,7 @@ class VocabularyAutofiller:
             "Example Sentence": example,
             "Example Translation": self._translate_example(example),
             "Synonyms": ", ".join(synonyms) if synonyms else None,
-            "Antonyms": ", ".join(entry.antonyms) if entry.antonyms else None,
+            "Antonyms": ", ".join(antonyms) if antonyms else None,
             "Notes": "; ".join(info.notes) if info.notes else None,
         }
         self.excel.update_vocab_row(row_idx, vocab_values)
@@ -263,7 +265,7 @@ class VocabularyAutofiller:
             else self._machine_translate(entry.word, "en")
         )
         persian = self._persian_translation(entry, english or entry.word)
-        example = entry.examples[0] if entry.examples else self._fallback_example(entry.word)
+        example = self._preferred_example(entry.examples) or self._fallback_example(entry.word)
         synonyms = (entry.synonyms or self.thesaurus.find_synonyms(entry.word))[:3]
 
         values = {
@@ -277,11 +279,17 @@ class VocabularyAutofiller:
             "Synonyms": ", ".join(synonyms) if synonyms else None,
             "Antonyms": ", ".join(entry.antonyms) if entry.antonyms else None,
         }
+
+        if word_type == "Pronoun":
+            pronoun_cases = config.GERMAN_PRONOUN_CASES.get(entry.word.strip())
+            if pronoun_cases:
+                values.update(pronoun_cases)
+
         self.excel.update_vocab_row(row_idx, values)
 
-    # ------------------------------------------------------------------
-    # Shared enrichment helpers
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
+        # Shared enrichment helpers
+        # ------------------------------------------------------------------
 
     def _enrich_common(self, entry: RawEntry, info) -> None:
         """Fill in Tatoeba/OpenThesaurus fallbacks directly onto the info object."""
@@ -293,6 +301,14 @@ class VocabularyAutofiller:
             info.synonyms = self.thesaurus.find_synonyms(getattr(info, "word", entry.word))[:3]
         elif hasattr(info, "synonyms"):
             info.synonyms = info.synonyms[:3]
+        print(info.synonyms, info.antonyms)
+
+    @staticmethod
+    def _preferred_example(examples):
+        if not examples:
+            return None
+        preferred_index = min(3, len(examples) - 1)
+        return examples[preferred_index]
 
     def _download_audio(self, entry: RawEntry, word: str):
         if not entry.audio_filename:
@@ -313,8 +329,11 @@ class VocabularyAutofiller:
         return self._machine_translate(example, "en")
 
     def _fallback_example(self, word: str):
-        result = self.tatoeba.find_example(word)
-        return result[0] if result else None
+        result = self.tatoeba.find_examples(word, limit=4)
+        if not result:
+            return None
+        preferred_index = min(3, len(result) - 1)
+        return result[preferred_index][0]
 
     @staticmethod
     def _bool_to_str(value):

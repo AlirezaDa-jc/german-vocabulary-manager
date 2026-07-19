@@ -130,7 +130,6 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
 
     last_row = n_data_rows + 1
     article_col = columns.index("Article") + 1
-    level_col = columns.index("Level (A1-C2)") + 1
     wordtype_col = columns.index("Word Type") + 1
     favorite_col = columns.index("Favorite") + 1
     learned_col = columns.index("Learned") + 1
@@ -138,19 +137,12 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
 
     # --- Data validation dropdowns -----------------------------------
     article_letter = get_column_letter(article_col)
-    level_letter = get_column_letter(level_col)
     wordtype_letter = get_column_letter(wordtype_col)
     favorite_letter = get_column_letter(favorite_col)
     learned_letter = get_column_letter(learned_col)
 
     dv_article = DataValidation(
         type="list", formula1='"der,die,das"', allow_blank=True, showDropDown=False
-    )
-    dv_level = DataValidation(
-        type="list",
-        formula1=f'"{",".join(config.VALID_LEVELS)}"',
-        allow_blank=True,
-        showDropDown=False,
     )
     dv_wordtype = DataValidation(
         type="list",
@@ -166,11 +158,10 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
         showDropDown=False,
     )
 
-    for dv in (dv_article, dv_level, dv_wordtype, dv_favorite, dv_learned):
+    for dv in (dv_article, dv_wordtype, dv_favorite, dv_learned):
         sheet.add_data_validation(dv)
 
     dv_article.add(f"{article_letter}2:{article_letter}{last_row}")
-    dv_level.add(f"{level_letter}2:{level_letter}{last_row}")
     dv_wordtype.add(f"{wordtype_letter}2:{wordtype_letter}{last_row}")
     dv_favorite.add(f"{favorite_letter}2:{favorite_letter}{last_row}")
     dv_learned.add(f"{learned_letter}2:{learned_letter}{last_row}")
