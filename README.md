@@ -1,6 +1,6 @@
 # German Vocabulary Manager
 
-A Windows desktop app + Excel workbook for building a German vocabulary
+A Windows/MacOs desktop app + Excel workbook for building a German vocabulary
 database. You type German words into the workbook, click one button,
 and the app enriches them with grammar, translations, examples, and
 pronunciation audio pulled from free online sources.
@@ -138,7 +138,7 @@ python app.py            # runs the GUI directly with Python
 python -m PyInstaller GermanVocabularyAutofill.spec --clean --noconfirm
 ```
 
-Output:
+Output Windows:
 
 ```
 dist/GermanVocabularyManager/GermanVocabularyManager.exe
