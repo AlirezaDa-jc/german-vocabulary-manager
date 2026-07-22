@@ -72,3 +72,10 @@ coll = COLLECT(
     upx_exclude=[],
     name="GermanVocabularyManager",
 )
+
+app = BUNDLE(
+    coll,
+    name="GermanVocabularyManager.app",
+    icon="icon.icns" if (project_dir / "icon.icns").exists() else None,
+    bundle_identifier="com.alirezada.germanvocabularymanager"
+)
