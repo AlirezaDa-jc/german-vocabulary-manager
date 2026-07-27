@@ -83,7 +83,7 @@ class GermanVocabularyApp(tk.Tk):
 
         self.create_button = ttk.Button(
             button_bar,
-            text="Create / Reset Workbook",
+            text="Create / Update Workbook",
             command=self.create_workbook,
         )
         self.create_button.grid(row=0, column=0, padx=(0, 10), ipadx=8, ipady=6)
@@ -200,7 +200,7 @@ class GermanVocabularyApp(tk.Tk):
 
         confirmed = messagebox.askyesno(
             APP_TITLE,
-            "This will create/reset vocabulary.xlsx. Continue?",
+            "This will create/update vocabulary.xlsx. Continue?",
         )
         if not confirmed:
             return
@@ -218,7 +218,7 @@ class GermanVocabularyApp(tk.Tk):
         if not config.WORKBOOK_PATH.exists():
             messagebox.showwarning(
                 APP_TITLE,
-                "vocabulary.xlsx does not exist yet. Click 'Create / Reset Workbook' first.",
+                "vocabulary.xlsx does not exist yet. Click 'Create / Update Workbook' first.",
             )
             return
 

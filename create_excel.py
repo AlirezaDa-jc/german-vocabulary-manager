@@ -5,7 +5,7 @@ create_excel.py
 
 Generates ``vocabulary.xlsx`` from scratch using ``openpyxl``.
 
-Run this once (or any time you want to reset the workbook):
+Run this once (or any time you want to update the workbook):
 
     python create_excel.py
 
@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 from typing import List
 
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -379,15 +379,55 @@ def build_settings_sheet(workbook: Workbook) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Update workbook
+# ---------------------------------------------------------------------------
+
+
+def update_existing_workbook() -> None:
+    workbook = load_workbook(config.WORKBOOK_PATH)
+
+    if config.SHEET_VOCAB not in workbook.sheetnames:
+        logger.warning("Vocabulary sheet not found — nothing to upgrade.")
+        return
+
+    sheet = workbook[config.SHEET_VOCAB]
+    headers = {cell.value: idx + 1 for idx, cell in enumerate(sheet[1])}
+    col_idx = headers.get("Pronunciation URL")
+    if not col_idx:
+        logger.warning("'Pronunciation URL' column not found — nothing to upgrade.")
+        return
+
+    upgraded = 0
+    for row_idx in range(2, sheet.max_row + 1):
+        cell = sheet.cell(row=row_idx, column=col_idx)
+        value = cell.value
+        if not value:
+            continue
+        if isinstance(value, str) and value.startswith("=HYPERLINK("):
+            continue
+        cell.value = f'=HYPERLINK("{value}", "🔊 Play")'
+        upgraded += 1
+
+    workbook.save(config.WORKBOOK_PATH)
+    logger.info("Upgraded %d pronunciation cell(s) to clickable links. No data was deleted.", upgraded)
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 
 def main() -> None:
-    workbook = Workbook()
-    workbook.remove(workbook.active)  # drop the default "Sheet"
+    if config.WORKBOOK_PATH.exists():
+        logger.info(
+            "%s already exists — skipping full rebuild, upgrading in place instead.",
+            config.WORKBOOK_PATH,
+        )
+        update_existing_workbook()
+        return
 
-    build_word_sheet(workbook)
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+
     build_vocabulary_sheet(workbook)
     build_verbs_sheet(workbook)
     build_adjectives_sheet(workbook)

@@ -21,7 +21,7 @@ on top of it. The workbook itself is stored and edited locally, but the
   conjugation, adjective comparison, English/Persian translation,
   IPA, example sentence, synonyms/antonyms, and pronunciation audio —
   automatically.
-- A simple GUI with four buttons: create/reset the workbook, run
+- A simple GUI with four buttons: create/update the workbook, run
   autofill, open the workbook, open the project folder.
 - No paid services and no API key — only free, public data sources.
 
@@ -29,11 +29,11 @@ on top of it. The workbook itself is stored and edited locally, but the
 
 This app is **not** a fully offline tool. Be precise about this:
 
-| Action | Requires internet? |
-|---|---|
-| Creating / resetting the workbook | No |
+| Action                                  | Requires internet? |
+|-----------------------------------------|---|
+| Creating / updating the workbook        | No |
 | Opening and editing the workbook by hand | No |
-| Autofill (looking up words) | **Yes** |
+| Autofill (looking up words)             | **Yes** |
 
 Workbook storage is local-first — your data lives in a plain `.xlsx`
 file on your computer. Enrichment is online-first — autofill calls
@@ -45,7 +45,7 @@ already have.
 
 1. Extract `GermanVocabularyManager.zip`.
 2. Run `GermanVocabularyManager.exe`.
-3. Click **Create / Reset Workbook** if `vocabulary.xlsx` doesn't exist yet.
+3. Click **Create / Update Workbook** if `vocabulary.xlsx` doesn't exist yet.
 4. Click **Open Workbook**.
 5. Go to the **Word** sheet and type in the German words you want to learn.
 6. Save and close Excel.
@@ -56,10 +56,8 @@ already have.
 
 ## Using the GUI buttons
 
-**Create / Reset Workbook**
-Runs `create_excel.py` to create `vocabulary.xlsx`, or rebuild it from
-scratch if it already exists (this resets the workbook — back up first
-if you want to keep existing data).
+**Create / Update Workbook**
+Runs `create_excel.py` to create `vocabulary.xlsx`, or update it if it already exists.
 
 **Autofill Vocabulary**
 Runs `autofill.py`. Looks up every pending word from the **Word**
@@ -74,7 +72,7 @@ Opens `vocabulary.xlsx` in Excel.
 Opens the folder containing the workbook, `data/`, `audio/`,
 `images/`, and the executable.
 
-### Important: close Excel before running Create/Reset or Autofill
+### Important: close Excel before running Create/Update or Autofill
 
 Excel locks the workbook file while it's open. The app checks for that
 lock to avoid write errors or corrupting the file — if `vocabulary.xlsx`
@@ -193,7 +191,7 @@ to have failed or skipped words.
   verification, especially for irregular words.
 - Pronunciation audio depends on Wiktionary/Commons having a usable
   file for that word.
-- Excel must be closed before Create/Reset or Autofill runs.
+- Excel must be closed before Create/Update or Autofill runs.
 
 ## Troubleshooting
 
