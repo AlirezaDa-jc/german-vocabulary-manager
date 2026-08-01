@@ -444,7 +444,7 @@ def update_existing_workbook() -> None:
         upgraded,
     )
 
-    _update_settings_version(workbook, "1.2.0")
+    _update_settings_version(workbook, "1.2.1")
 
     workbook.save(config.WORKBOOK_PATH)
 
