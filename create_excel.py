@@ -34,9 +34,13 @@ from core.statistics_manager import StatisticsManager
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-HEADER_FONT = Font(name=config.FONT_NAME, bold=True, color=config.HEADER_FONT_COLOR, size=11)
+HEADER_FONT = Font(
+    name=config.FONT_NAME, bold=True, color=config.HEADER_FONT_COLOR, size=11
+)
 HEADER_FILL = PatternFill(
-    start_color=config.HEADER_FILL_COLOR, end_color=config.HEADER_FILL_COLOR, fill_type="solid"
+    start_color=config.HEADER_FILL_COLOR,
+    end_color=config.HEADER_FILL_COLOR,
+    fill_type="solid",
 )
 BODY_FONT = Font(name=config.FONT_NAME, size=11)
 CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -58,13 +62,17 @@ def _write_header(sheet: Worksheet, columns: List[str]) -> None:
     sheet.row_dimensions[1].height = 24
 
 
-def _autosize_columns(sheet: Worksheet, columns: List[str], min_width: int = 12, max_width: int = 40) -> None:
+def _autosize_columns(
+    sheet: Worksheet, columns: List[str], min_width: int = 12, max_width: int = 40
+) -> None:
     for col_idx, name in enumerate(columns, start=1):
         width = max(min_width, min(max_width, len(name) + 6))
         sheet.column_dimensions[get_column_letter(col_idx)].width = width
 
 
-def _add_table(sheet: Worksheet, name: str, columns: List[str], n_data_rows: int = 200) -> None:
+def _add_table(
+    sheet: Worksheet, name: str, columns: List[str], n_data_rows: int = 200
+) -> None:
     """Register an Excel Table so filters + banded styling work out of the box."""
     last_col_letter = get_column_letter(len(columns))
     last_row = max(2, n_data_rows) + 1
@@ -150,7 +158,9 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
         allow_blank=True,
         showDropDown=False,
     )
-    dv_favorite = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True, showDropDown=False)
+    dv_favorite = DataValidation(
+        type="list", formula1='"Yes,No"', allow_blank=True, showDropDown=False
+    )
     dv_learned = DataValidation(
         type="list",
         formula1=f'"{config.LEARNED_UNCHECKED},{config.LEARNED_CHECKED}"',
@@ -169,7 +179,9 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
     for row_idx in range(2, last_row + 1):
         sheet.cell(row=row_idx, column=learned_col, value=config.LEARNED_UNCHECKED)
         review_cell = sheet.cell(row=row_idx, column=review_col)
-        review_cell.value = f'=IF(${learned_letter}{row_idx}="{config.LEARNED_CHECKED}",TODAY(),"")'
+        review_cell.value = (
+            f'=IF(${learned_letter}{row_idx}="{config.LEARNED_CHECKED}",TODAY(),"")'
+        )
         review_cell.number_format = "yyyy-mm-dd"
 
     # --- Conditional formatting ---------------------------------------
@@ -201,7 +213,9 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
 
     # 2) Learned rows -> green fill when selected as checked
     learned_fill = PatternFill(
-        start_color=config.LEARNED_FILL, end_color=config.LEARNED_FILL, fill_type="solid"
+        start_color=config.LEARNED_FILL,
+        end_color=config.LEARNED_FILL,
+        fill_type="solid",
     )
     learned_rule = FormulaRule(
         formula=[f'${learned_letter}2="{config.LEARNED_CHECKED}"'],
@@ -212,7 +226,9 @@ def build_vocabulary_sheet(workbook: Workbook, n_data_rows: int = 200) -> None:
 
     # 3) Favorite rows -> yellow fill (only applies if not already Learned)
     favorite_fill = PatternFill(
-        start_color=config.FAVORITE_FILL, end_color=config.FAVORITE_FILL, fill_type="solid"
+        start_color=config.FAVORITE_FILL,
+        end_color=config.FAVORITE_FILL,
+        fill_type="solid",
     )
     favorite_rule = FormulaRule(
         formula=[f'${favorite_letter}2="Yes"'], fill=favorite_fill, stopIfTrue=True
@@ -383,6 +399,21 @@ def build_settings_sheet(workbook: Workbook) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _update_settings_version(workbook: Workbook, version: str) -> None:
+    if config.SHEET_SETTINGS not in workbook.sheetnames:
+        logger.warning("Settings sheet not found — version not updated.")
+        return
+
+    sheet = workbook[config.SHEET_SETTINGS]
+    for row_idx in range(2, sheet.max_row + 1):
+        if sheet.cell(row=row_idx, column=1).value == "Version":
+            sheet.cell(row=row_idx, column=2, value=version)
+            logger.info("Settings sheet Version updated to %s.", version)
+            return
+
+    logger.warning("'Version' row not found in Settings sheet — nothing updated.")
+
+
 def update_existing_workbook() -> None:
     workbook = load_workbook(config.WORKBOOK_PATH)
 
@@ -408,8 +439,15 @@ def update_existing_workbook() -> None:
         cell.value = f'=HYPERLINK("{value}", "🔊 Play")'
         upgraded += 1
 
+    logger.info(
+        "Upgraded %d pronunciation cell(s) to clickable links. No data was deleted.",
+        upgraded,
+    )
+
+    _update_settings_version(workbook, "1.2.0")
+
     workbook.save(config.WORKBOOK_PATH)
-    logger.info("Upgraded %d pronunciation cell(s) to clickable links. No data was deleted.", upgraded)
+
 
 # ---------------------------------------------------------------------------
 # Entry point

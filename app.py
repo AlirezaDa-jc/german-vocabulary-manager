@@ -12,7 +12,7 @@ from tkinter import messagebox, scrolledtext, ttk
 import config
 import create_excel
 from autofill import VocabularyAutofiller
-
+from workbook_viewer import open_workbook_viewer
 
 APP_TITLE = "German Vocabulary Manager"
 
@@ -102,12 +102,19 @@ class GermanVocabularyApp(tk.Tk):
         )
         self.open_excel_button.grid(row=0, column=2, padx=(0, 10), ipadx=8, ipady=6)
 
+        self.view_edit_button = ttk.Button(
+            button_bar,
+            text="View / Edit Workbook (Beta)",
+            command=self.view_edit_workbook,
+        )
+        self.view_edit_button.grid(row=0, column=3, padx=(0, 10), ipadx=8, ipady=6)
+
         self.open_folder_button = ttk.Button(
             button_bar,
             text="Open Project Folder",
             command=self.open_project_folder,
         )
-        self.open_folder_button.grid(row=0, column=3, ipadx=8, ipady=6)
+        self.open_folder_button.grid(row=0, column=4, ipadx=8, ipady=6)
 
         content = ttk.Frame(self, padding=(20, 0, 20, 20))
         content.grid(row=2, column=0, sticky="nsew")
@@ -143,6 +150,7 @@ class GermanVocabularyApp(tk.Tk):
         self.create_button.configure(state=state)
         self.autofill_button.configure(state=state)
         self.open_excel_button.configure(state=state)
+        self.view_edit_button.configure(state=state)
         self.open_folder_button.configure(state=state)
 
     def _run_background(self, title: str, task) -> None:
@@ -233,6 +241,15 @@ class GermanVocabularyApp(tk.Tk):
             return
 
         self._open_path(config.WORKBOOK_PATH)
+
+    def view_edit_workbook(self) -> None:
+        if not config.WORKBOOK_PATH.exists():
+            messagebox.showwarning(
+                APP_TITLE,
+                "vocabulary.xlsx does not exist yet. Create it first.",
+            )
+            return
+        open_workbook_viewer(self)
 
     def open_project_folder(self) -> None:
         self._open_path(config.BASE_DIR)
